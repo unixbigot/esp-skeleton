@@ -58,7 +58,15 @@ void saveConfigCallback()
 void readConfig() 
 {
   if (!SPIFFS.begin()) {
-    ALERT("failed to mount FS");
+
+    ALERT("failed to mount FS.  Reformatting");
+    SPIFFS.format();
+    ALERT("Format complete, rebooting");
+#ifdef ESP8266
+    ESP.reset();
+#else
+    ESP.restart();
+#endif
     return;
   }
 
