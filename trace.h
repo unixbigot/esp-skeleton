@@ -13,8 +13,8 @@
 #endif
 
 
-#define DBGMILLIS { \
-    DBG.printf("%8lu %s(%d) ", millis(), __FUNCTION__, __LINE__);	\
+#define DBGMILLIS(l) {							\
+    DBG.printf("%8lu %6s %s(%d) ", millis(), _level_str(l), __FUNCTION__, __LINE__); \
   }
 
 #define DBGINDENT DBG.print("\t")
@@ -31,7 +31,17 @@ byte debug = DEBUG_LEVEL;
 const unsigned int SYSLOG_port = 514;
 WiFiUDP UDP;
 
-void _udpsend(char *dst, unsigned int port, char *buf, unsigned int len)
+inline const char *_level_str(int l) {
+  switch (l) {
+  case L_ALERT: return "ALERT";
+  case L_NOTICE: return "NOTICE";
+  case L_INFO: return "INFO";
+  case L_DEBUG: return "DEBUG";
+  default: return "TRACE";
+  }
+}
+
+void _udpsend(char *dst, unsigned int port, const char *buf, unsigned int len)
 {
   //Serial.print("udpsend "); Serial.print(dst); Serial.print(":");Serial.print(port);Serial.print(" => "); Serial.println(buf);
 
@@ -47,7 +57,7 @@ void _udpsend(char *dst, unsigned int port, char *buf, unsigned int len)
     WiFi.hostByName(dst, syslogIP);
   }
   UDP.beginPacket(syslogIP, port);
-  UDP.write(buf, len);
+  UDP.write((const uint8_t *)buf, len);
   UDP.endPacket();
 }
 
@@ -84,9 +94,9 @@ void _udpsend(char *dst, unsigned int port, char *buf, unsigned int len)
 #define SYSLOG(l,...) {}
 #endif  
    
-#define ENTER(l)  int enterlevel=l; if (debug>=l) __DEBUG__(l,">%s\n", __func__)
-#define LEAVE  __DEBUG__(enterlevel,"<%s\n", __func__)
-#define __DEBUG__(l,...) {if(debug>=l){DBGMILLIS; DBG.printf(__VA_ARGS__); DBG.println();SYSLOG(l,__VA_ARGS__)}}
+#define ENTER(l)  int enterlevel=l; if (debug>=l) __DEBUG__(l,">%s", __func__)
+#define LEAVE  __DEBUG__(enterlevel,"<%s", __func__)
+#define __DEBUG__(l,...) {if(debug>=l){DBGMILLIS(l); DBG.printf(__VA_ARGS__); DBG.println();SYSLOG(l,__VA_ARGS__)}}
 #define ALERT( ...) __DEBUG__(L_ALERT ,__VA_ARGS__)
 #define NOTICE(...) __DEBUG__(L_NOTICE,__VA_ARGS__)
 #define INFO(...)   __DEBUG__(L_INFO  ,__VA_ARGS__)
